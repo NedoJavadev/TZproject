@@ -4,28 +4,24 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.*;
 
 public class TypeFilter {
 
-    private static final String ANSI_RESET = "\u001B[0m";
-    private static final String ANSI_BLACK = "\u001B[30m";
-    private static final String ANSI_RED = "\u001B[31m";
-    private static final String ANSI_GREEN = "\u001B[32m";
-    private static final String ANSI_YELLOW = "\u001B[33m";
-    private static final String ANSI_BLUE = "\u001B[34m";
-    private static final String ANSI_PURPLE = "\u001B[35m";
-    private static final String ANSI_CYAN = "\u001B[36m";
-    private static final String ANSI_WHITE = "\u001B[37m";
-    private static final String ANSI_BOLD = "\u001B[1m";
+    private final String ANSI_RESET = "\u001B[0m";
+    private final String ANSI_RED = "\u001B[31m";
+    private final String ANSI_YELLOW = "\u001B[33m";
+    private final String ANSI_BOLD = "\u001B[1m";
+
 
     private String resultPath = "";
     private final List<String> filesPath;
     private String prefix = "";
     private final boolean add;
-    private String statistic;
+    private final String statistic;
     private List<String[]> vals;
-    private List<String> arguments;
+    private final List<String> arguments;
 
     public TypeFilter(String[] args) {
         arguments = new ArrayList<>(List.of(args));
@@ -55,11 +51,11 @@ public class TypeFilter {
         filesPath = new ArrayList<>(arguments);
     }
 
-    void start() throws IOException {
+    void start() throws IOException, URISyntaxException {
         vals = scanFiles();
         writeResults();
-        //shorStatistic();
-        fullStatistic();
+        if (statistic.equals("s")) shorStatistic();
+        else fullStatistic();
     }
 
     private void shorStatistic() {
@@ -68,12 +64,10 @@ public class TypeFilter {
         int intCount = 0;
         int fltCount = 0;
         for (String[] line : vals) {
-            if (line[0].equals("string")) {
-                strCount++;
-            } else if (line[0].equals("int")) {
-                intCount++;
-            } else if (line[0].equals("float")) {
-                fltCount++;
+            switch (line[0]) {
+                case "string" -> strCount++;
+                case "int" -> intCount++;
+                case "float" -> fltCount++;
             }
         }
 
@@ -92,66 +86,66 @@ public class TypeFilter {
     }
 
     private void fullStatistic() {
-      /*type   count   min   max   sum  average
-        int
-        type   count   min   max   sum   average
-        float
-        */
-        List<String[]> statistics = new ArrayList<>();
-
-
-        String leftAlignFormat = "| %-5s | %-7s | %-15s | %-14s |%n";
-        System.out.format("+--------+---------+-----------------+----------------+%n");
-        System.out.format("|  type  |  count  |  smallest size  |  biggest size  |%n");
-        System.out.format("+--------+---------+-----------------+----------------+%n");
         String[] line = getStatisticsForString();
-        System.out.format(leftAlignFormat, "string" , line[0], line[1], line[2]);
-        System.out.format("+--------+---------+-----------------+----------------+%n");
+        String leftAlignFormat = "| %-5s | %-7s | %-15s | %-14s |%n";
+        if (!line[0].equals("0")) {
+            System.out.format("+--------+---------+-----------------+----------------+%n");
+            System.out.format("|  type  |  count  |  smallest size  |  biggest size  |%n");
+            System.out.format("+--------+---------+-----------------+----------------+%n");
+            System.out.format(leftAlignFormat, "string", line[0], line[1], line[2]);
+            System.out.format("+--------+---------+-----------------+----------------+%n");
+        }
 
         System.out.println();
 
-        leftAlignFormat = "| %-6s | %-7s | %-9s | %-9s |  %-7s  |  %-11s  |%n";
-        System.out.format("+--------+---------+-----------+-----------+-----------+---------------+%n");
-        System.out.format("|  type  |  count  |    min    |    max    |    sum    |    average    |%n");
-        System.out.format("+--------+---------+-----------+-----------+-----------+---------------+%n");
         String[] line2 = getStatisticsForInteger();
-        System.out.format(leftAlignFormat, "int" , line2[0], line2[1], line2[2], line2[3], line2[4]);
-        System.out.format("+--------+---------+-----------+-----------+-----------+---------------+%n");
+        if (!line2[0].equals("0")) {
+            leftAlignFormat = "| %-6s | %-7s | %-9s | %-13s |  %-11s  |  %-15s  |%n";
+            System.out.format("+--------+---------+-----------+---------------+---------------+-------------------+%n");
+            System.out.format("|  type  |  count  |    min    |      max      |      sum      |      average      |%n");
+            System.out.format("+--------+---------+-----------+---------------+---------------+-------------------+%n");
+            System.out.format(leftAlignFormat, "int", line2[0], line2[1], line2[2], line2[3], line2[4]);
+            System.out.format("+--------+---------+-----------+---------------+---------------+-------------------+%n");
+        }
 
         System.out.println();
 
-        leftAlignFormat = "| %-6s | %-7s | %-9s | %-9s |  %-7s  |  %-11s  |%n";
-        System.out.format("+--------+---------+-----------+-----------+-----------+---------------+%n");
-        System.out.format("|  type  |  count  |    min    |    max    |    sum    |    average    |%n");
-        System.out.format("+--------+---------+-----------+-----------+-----------+---------------+%n");
         String[] line3 = getStatisticsForFloat();
-        System.out.format(leftAlignFormat, "float" , line3[0], line3[1], line3[2], line3[3], line3[4]);
-        System.out.format("+--------+---------+-----------+-----------+-----------+---------------+%n");
+        if (!line3[0].equals("0")) {
+            leftAlignFormat = "| %-6s | %-7s | %-9s | %-25s |  %-23s  |  %-27s  |%n";
+            System.out.format("+--------+---------+-----------+---------------------------+---------------------------+-------------------------------+%n");
+            System.out.format("|  type  |  count  |    min    |            max            |            sum            |            average            |%n");
+            System.out.format("+--------+---------+-----------+---------------------------+---------------------------+-------------------------------+%n");
 
+            System.out.format(leftAlignFormat, "float", line3[0], line3[1], line3[2], line3[3], line3[4]);
+            System.out.format("+--------+---------+-----------+---------------------------+---------------------------+-------------------------------+%n");
+        }
     }
 
+
     private String[] getStatisticsForInteger() {
+
         int count = 0;
-        int min = Integer.MAX_VALUE;
-        int max = 0;
-        int sum = 0;
-        double average;
+        long min = Integer.MAX_VALUE;
+        long max = Integer.MIN_VALUE;
+        long sum = 0;
+        float average;
         for (String[] line : vals) {
             if (line[0].equals("int")) {
                 count++;
-                min = Math.min(min, Integer.parseInt(line[1]));
-                max = Math.max(max, Integer.parseInt(line[1]));
-                sum += Integer.parseInt(line[1]);
+                min = Math.min(min, Long.parseLong(line[1]));
+                max = Math.max(max, Long.parseLong(line[1]));
+                sum += Long.parseLong(line[1]);
             }
         }
-        average = (double) sum / count;
+        average = (float) sum / count;
         return new String[]{count + "", min + "", max + "", sum + "", average + ""};
     }
 
     private String[] getStatisticsForFloat() {
         int count = 0;
         float min = Float.MAX_VALUE;
-        float max = 0;
+        float max = (float)Long.MIN_VALUE;
         float sum = 0;
         float average;
         for (String[] line : vals) {
@@ -247,24 +241,26 @@ public class TypeFilter {
         return vals;
     }
 
-    private void writeResults() throws IOException {
+    private void writeResults() throws IOException, URISyntaxException {
+        String getJarName = new File(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI()).getName();
+        String getWorkLocation = String.valueOf(this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath())
+                .replace("file:/", "")
+                .replace(getJarName, "");
+
         if (!add) {
-            File dir = new File(System.getProperty("user.dir") + "/" + resultPath);
-            if (new File(dir.getAbsolutePath() + "/" + resultPath + "/" + prefix + "integers").exists()) {
-                new File(dir.getAbsolutePath() + "/" + resultPath + "/" + prefix + "integers").delete();
+            if (new File(getWorkLocation + "/" + resultPath + "/" + prefix + "integers").exists()) {
+                new File(getWorkLocation + "/" + resultPath + "/" + prefix + "integers").delete();
             }
-            if (new File(dir.getAbsolutePath() + "/" + resultPath + "/" + prefix + "strings").exists()) {
-                new File(dir.getAbsolutePath() + "/" + resultPath + "/" + prefix + "strings").delete();
+            if (new File(getWorkLocation + "/" + resultPath + "/" + prefix + "strings").exists()) {
+                new File(getWorkLocation + "/" + resultPath + "/" + prefix + "strings").delete();
             }
-            if (new File(dir.getAbsolutePath() + "/" + resultPath + "/" + prefix + "floats").exists()) {
-                new File(dir.getAbsolutePath() + "/" + resultPath + "/" + prefix + "floats").delete();
+            if (new File(getWorkLocation + "/" + resultPath + "/" + prefix + "floats").exists()) {
+                new File(getWorkLocation + "/" + resultPath + "/" + prefix + "floats").delete();
             }
         }
 
-        File resDir = new File(System.getProperty("user.dir") + "/" + resultPath);
-
-        String fullPath = resDir.getAbsolutePath();
-
+        String fullPath = getWorkLocation + "/" + resultPath;
+        File resDir = new File(fullPath);
         File intResult = new File(fullPath + "/" + prefix + "integers.txt");
         FileWriter intWriter = null;
 
@@ -276,50 +272,28 @@ public class TypeFilter {
 
         resDir.mkdir();
         for (String[] result : vals) {
-            if (result[0].equals("int")) {
-                intResult.createNewFile();
-                if (intResult.exists()) {
-                    if (intWriter == null) {
-                        intWriter = add == true ? new FileWriter(intResult, true) : new FileWriter(intResult);
-                    }
-                    intWriter.write(result[1] + "\n");
-                    intWriter.flush();
-                }
-            }
+            if (result[0].equals("int"))
+                writeValue(intResult, intWriter, result[1]);
 
-            if (result[0].equals("string")) {
-                strResult.createNewFile();
-                if (strResult.exists()) {
-                    if (strWriter == null) {
-                        strWriter = add == true ? new FileWriter(strResult, true) : new FileWriter(strResult);
-                    }
-                    strWriter.write(result[1] + "\n");
-                    strWriter.flush();
-                }
-            }
+            if (result[0].equals("string"))
+                writeValue(strResult, strWriter, result[1]);
 
-            if (result[0].equals("float")) {
-                fltResult.createNewFile();
-                if (fltResult.exists()) {
-                    if (fltWriter == null) {
-                        fltWriter = add == true ? new FileWriter(fltResult, true) : new FileWriter(fltResult);
-                    }
-                    fltWriter.write(result[1] + "\n");
-                    fltWriter.flush();
-                }
-            }
+
+            if (result[0].equals("float"))
+                writeValue(fltResult, fltWriter, result[1]);
+
         }
-
     }
 
-    private boolean deleteDirectory(File directoryToBeDeleted) {
-        File[] allContents = directoryToBeDeleted.listFiles();
-        if (allContents != null) {
-            for (File file : allContents) {
-                deleteDirectory(file);
+    private void writeValue(File resultFile, FileWriter writer, String value) throws IOException {
+        resultFile.createNewFile();
+        if (resultFile.exists()) {
+            if (writer == null) {
+                writer = add ? new FileWriter(resultFile, true) : new FileWriter(resultFile);
             }
+            writer.write(value + "\n");
+            writer.flush();
         }
-        return directoryToBeDeleted.delete();
     }
 
     private void showHelp() {
@@ -332,3 +306,4 @@ public class TypeFilter {
 
     }
 }
+
