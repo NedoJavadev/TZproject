@@ -1,5 +1,6 @@
 # Usage example
 java -jar <path to .jar file> [options] {files}
+java -jar C:/app.jar -a ./in1.txt
 # Options
   Use -o to set path for result files  
 Use -p to set prefix for result files  
