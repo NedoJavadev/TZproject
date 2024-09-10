@@ -9,11 +9,10 @@ import java.util.*;
 
 public class TypeFilter {
 
-    private final String ANSI_RESET = "\u001B[0m";
-    private final String ANSI_RED = "\u001B[31m";
-    private final String ANSI_YELLOW = "\u001B[33m";
-    private final String ANSI_BOLD = "\u001B[1m";
-
+    private static final String ANSI_RESET = "\u001B[0m";
+    private static final String ANSI_RED = "\u001B[31m";
+    private static final String ANSI_YELLOW = "\u001B[33m";
+    private static final String ANSI_BOLD = "\u001B[1m";
 
     private String resultPath = "";
     private final List<String> filesPath;
@@ -22,8 +21,14 @@ public class TypeFilter {
     private final String statistic;
     private List<String[]> vals;
     private final List<String> arguments;
+    private final String getWorkLocation;
+    private String getJarName;
+    public TypeFilter(String[] args) throws URISyntaxException {
+        getJarName = new File(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI()).getName();
+        getWorkLocation = String.valueOf(this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath())
+                .replace("file:/", "")
+                .replace(getJarName, "");
 
-    public TypeFilter(String[] args) {
         arguments = new ArrayList<>(List.of(args));
         add = arguments.contains("-a");
         arguments.remove("-a");
@@ -100,12 +105,12 @@ public class TypeFilter {
 
         String[] line2 = getStatisticsForInteger();
         if (!line2[0].equals("0")) {
-            leftAlignFormat = "| %-6s | %-7s | %-9s | %-13s |  %-11s  |  %-15s  |%n";
-            System.out.format("+--------+---------+-----------+---------------+---------------+-------------------+%n");
-            System.out.format("|  type  |  count  |    min    |      max      |      sum      |      average      |%n");
-            System.out.format("+--------+---------+-----------+---------------+---------------+-------------------+%n");
+            leftAlignFormat = "| %-6s | %-7s | %-9s | %-25s |  %-23s  |  %-15s  |%n";
+            System.out.format("+--------+---------+-----------+---------------------------+---------------------------+-------------------+%n");
+            System.out.format("|  type  |  count  |    min    |            max            |            sum            |      average      |%n");
+            System.out.format("+--------+---------+-----------+---------------------------+---------------------------+-------------------+%n");
             System.out.format(leftAlignFormat, "int", line2[0], line2[1], line2[2], line2[3], line2[4]);
-            System.out.format("+--------+---------+-----------+---------------+---------------+-------------------+%n");
+            System.out.format("+--------+---------+-----------+---------------------------+---------------------------+-------------------+%n");
         }
 
         System.out.println();
@@ -145,7 +150,7 @@ public class TypeFilter {
     private String[] getStatisticsForFloat() {
         int count = 0;
         float min = Float.MAX_VALUE;
-        float max = (float)Long.MIN_VALUE;
+        float max = (float) Long.MIN_VALUE;
         float sum = 0;
         float average;
         for (String[] line : vals) {
@@ -201,6 +206,10 @@ public class TypeFilter {
     private List<String[]> scanFiles() {
         List<String[]> vals = new ArrayList<>();
         for (String file : filesPath) {
+            if(file.charAt(0) == '.' && (file.charAt(1) == '\\' || file.charAt(1) == '/')) {
+                file = file.substring(2);
+                file = getWorkLocation + "/" + file;
+            }
             if (!(file.charAt(0) == '-')) {
                 try {
                     File source = new File(file);
@@ -242,20 +251,15 @@ public class TypeFilter {
     }
 
     private void writeResults() throws IOException, URISyntaxException {
-        String getJarName = new File(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI()).getName();
-        String getWorkLocation = String.valueOf(this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath())
-                .replace("file:/", "")
-                .replace(getJarName, "");
-
         if (!add) {
-            if (new File(getWorkLocation + "/" + resultPath + "/" + prefix + "integers").exists()) {
-                new File(getWorkLocation + "/" + resultPath + "/" + prefix + "integers").delete();
+            if (new File(getWorkLocation + "/" + resultPath + "/" + prefix + "integers.txt").exists()) {
+                new File(getWorkLocation + "/" + resultPath + "/" + prefix + "integers.txt").delete();
             }
-            if (new File(getWorkLocation + "/" + resultPath + "/" + prefix + "strings").exists()) {
-                new File(getWorkLocation + "/" + resultPath + "/" + prefix + "strings").delete();
+            if (new File(getWorkLocation + "/" + resultPath + "/" + prefix + "strings.txt").exists()) {
+                new File(getWorkLocation + "/" + resultPath + "/" + prefix + "strings.txt").delete();
             }
-            if (new File(getWorkLocation + "/" + resultPath + "/" + prefix + "floats").exists()) {
-                new File(getWorkLocation + "/" + resultPath + "/" + prefix + "floats").delete();
+            if (new File(getWorkLocation + "/" + resultPath + "/" + prefix + "floats.txt").exists()) {
+                new File(getWorkLocation + "/" + resultPath + "/" + prefix + "floats.txt").delete();
             }
         }
 
@@ -272,29 +276,41 @@ public class TypeFilter {
 
         resDir.mkdir();
         for (String[] result : vals) {
-            if (result[0].equals("int"))
-                writeValue(intResult, intWriter, result[1]);
-
-            if (result[0].equals("string"))
-                writeValue(strResult, strWriter, result[1]);
-
-
-            if (result[0].equals("float"))
-                writeValue(fltResult, fltWriter, result[1]);
-
-        }
-    }
-
-    private void writeValue(File resultFile, FileWriter writer, String value) throws IOException {
-        resultFile.createNewFile();
-        if (resultFile.exists()) {
-            if (writer == null) {
-                writer = add ? new FileWriter(resultFile, true) : new FileWriter(resultFile);
+            if (result[0].equals("int")) {
+                intResult.createNewFile();
+                if (intResult.exists()) {
+                    if (intWriter == null) {
+                        intWriter = add ? new FileWriter(intResult, true) : new FileWriter(intResult);
+                    }
+                    intWriter.write(result[1] + "\n");
+                    intWriter.flush();
+                }
             }
-            writer.write(value + "\n");
-            writer.flush();
+
+            if (result[0].equals("string")) {
+                strResult.createNewFile();
+                if (strResult.exists()) {
+                    if (strWriter == null) {
+                        strWriter = add ? new FileWriter(strResult, true) : new FileWriter(strResult);
+                    }
+                    strWriter.write(result[1] + "\n");
+                    strWriter.flush();
+                }
+            }
+
+            if (result[0].equals("float")) {
+                fltResult.createNewFile();
+                if (fltResult.exists()) {
+                    if (fltWriter == null) {
+                        fltWriter = add ? new FileWriter(fltResult, true) : new FileWriter(fltResult);
+                    }
+                    fltWriter.write(result[1] + "\n");
+                    fltWriter.flush();
+                }
+            }
         }
     }
+
 
     private void showHelp() {
         System.out.println(ANSI_BOLD + "Usage: java -jar <path to .jar file> [options] <files>" + ANSI_RESET);
@@ -306,4 +322,3 @@ public class TypeFilter {
 
     }
 }
-
